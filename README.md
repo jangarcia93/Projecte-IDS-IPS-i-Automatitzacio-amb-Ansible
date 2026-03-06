@@ -146,7 +146,13 @@ sudo sysctl -p
 
 # Configuració IPTABLES
 
-## Regla NAT (sortida a Internet)
+Per permetre la comunicació entre les xarxes internes i proporcionar accés a Internet als sistemes del laboratori, el servidor Ubuntu amb Suricata es configura com a **router amb NAT utilitzant iptables**.
+
+Inicialment les regles es van aplicar manualment amb `iptables`, però aquestes **no són persistents** i es perden després de reiniciar el sistema. Per aquest motiu es va configurar la persistència utilitzant el paquet `iptables-persistent`.
+
+---
+
+# Regla NAT (sortida a Internet)
 
 La següent regla permet que els hosts de les xarxes internes surtin a Internet utilitzant la IP externa del servidor IDS.
 
@@ -158,7 +164,7 @@ La interfície `enp0s9` és la que proporciona la connexió cap a Internet.
 
 ---
 
-## Regles de Forwarding
+# Regles de Forwarding
 
 Encara que el forwarding ja està habilitat amb `ip_forward`, es defineixen explícitament les regles per permetre el trànsit entre les xarxes internes i Internet.
 
@@ -178,6 +184,57 @@ sudo iptables -A FORWARD -i enp0s9 -o enp0s8 -m state --state RELATED,ESTABLISHE
 
 ---
 
+# Persistència de les regles
+
+Per evitar que les regles es perdin després de reiniciar la màquina virtual es va instal·lar el paquet:
+
+```bash
+sudo apt install iptables-persistent
+```
+
+Aquest paquet guarda les regles dins del fitxer:
+
+```
+/etc/iptables/rules.v4
+```
+
+En aquest projecte, després d’un reinici de la màquina virtual, les regles es van afegir manualment en aquest fitxer per garantir que el sistema continuï funcionant com a router després de cada arrencada.
+
+Exemple de configuració dins del fitxer:
+
+```
+*nat
+:PREROUTING ACCEPT [0:0]
+:INPUT ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+:POSTROUTING ACCEPT [0:0]
+
+-A POSTROUTING -o enp0s9 -j MASQUERADE
+
+COMMIT
+
+
+*filter
+:INPUT ACCEPT [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+
+-A FORWARD -i enp0s3 -o enp0s9 -j ACCEPT
+-A FORWARD -i enp0s8 -o enp0s9 -j ACCEPT
+-A FORWARD -i enp0s9 -o enp0s3 -m state --state RELATED,ESTABLISHED -j ACCEPT
+-A FORWARD -i enp0s9 -o enp0s8 -m state --state RELATED,ESTABLISHED -j ACCEPT
+
+COMMIT
+```
+
+Després de modificar el fitxer es poden aplicar les regles amb:
+
+```bash
+sudo netfilter-persistent reload
+```
+
+---
+
 # Funcionament
 
 Amb aquesta configuració:
@@ -186,6 +243,7 @@ Amb aquesta configuració:
 - Els hosts interns poden accedir a Internet
 - Tot el trànsit passa pel servidor IDS
 - Suricata pot analitzar el trànsit entre segments
+- Les regles de xarxa es mantenen després de reiniciar el sistema
 
 Aquest model permet centralitzar la monitorització de xarxa i facilita la detecció d’activitats sospitoses dins del laboratori.
 
