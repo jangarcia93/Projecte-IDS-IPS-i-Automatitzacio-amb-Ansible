@@ -428,7 +428,38 @@ Exemple de configuració:
     regexp: '^PermitRootLogin'
     line: 'PermitRootLogin no'
 ```
+---
 
+# Execució Ràpida del Laboratori
+
+Per iniciar la infraestructura Docker del laboratori:
+
+```bash
+docker compose up -d
+```
+
+Accedir al contenidor del node de control d’Ansible:
+
+```bash
+sudo docker exec -it ansible-control bash
+```
+
+Executar el playbook d'automatització:
+
+```bash
+ansible-playbook -i /inventory/hosts /ansible/setup_web.yml
+```
+
+Després de l'execució del playbook:
+
+- els nodes gestionats disposaran d’un **servidor web Nginx instal·lat i actiu**
+- es desplegarà una **pàgina web personalitzada**
+- es configuraran **usuaris, directoris i serveis**
+- s’aplicaran **configuracions bàsiques de seguretat**
+
+Això demostra com Ansible pot automatitzar la configuració d’una infraestructura completa.
+
+---
 ---
 # Sistema IDS amb Suricata
 
@@ -527,16 +558,17 @@ Seguretat:
 ---
 
 # Tecnologies Utilitzades
+Aquest projecte combina diverses tecnologies d’administració de sistemes i ciberseguretat.
 
-- Ansible
-- Docker
-- Suricata
-- Elasticsearch
-- Kibana
-- Filebeat
-- Kali Linux
-- Ubuntu Server
-- VirtualBox
+- **Ansible** → automatització de configuració
+- **Docker** → infraestructura de contenidors
+- **Suricata** → sistema IDS/IPS
+- **Elasticsearch** → indexació de logs
+- **Kibana** → visualització d'alertes
+- **Filebeat** → enviament de logs
+- **Kali Linux** → simulació d’atacs
+- **Ubuntu Server** → servidor IDS
+- **VirtualBox** → virtualització del laboratori
 
 ---
 
