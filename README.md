@@ -699,6 +699,214 @@ Aquest mecanisme permet implementar un **sistema d'alerta temprana davant possib
 
 ---
 
+# Simulació d'Atacs amb Kali Linux
+
+Per validar el funcionament del sistema IDS es van simular diferents atacs des d'una màquina **Kali Linux** situada al segment d'atac de la xarxa.
+
+Aquestes proves permeten verificar que:
+
+- Suricata detecta activitat sospitosa
+- les regles personalitzades funcionen correctament
+- les alertes apareixen a Kibana
+- el sistema d'alerta temprana envia correus electrònics
+
+---
+
+## Escaneig de Ports (Nmap)
+
+Per simular una fase de reconeixement es va utilitzar **Nmap** per escanejar els ports del servidor.
+
+```bash
+nmap -sS -T4 -p- 192.168.200.1
+```
+
+Aquest escaneig activa les regles:
+
+- `SCAN detectat contra infraestructura`
+- `Possible escaneig de ports`
+
+---
+
+## Atac de Força Bruta SSH
+
+Per provar la detecció d'intents d'accés SSH es va utilitzar **Hydra**.
+
+```bash
+hydra -l root -P /usr/share/wordlists/rockyou.txt ssh://192.168.200.1 -s 2221 -t 4
+```
+
+Aquest atac genera múltiples intents d'autenticació i activa les regles:
+
+- `Intent d'acces SSH detectat`
+- `Possible brute force SSH`
+
+---
+
+## Accés a Serveis Web
+
+Per simular accessos als serveis web desplegats amb Ansible es va utilitzar **curl**.
+
+```bash
+curl http://192.168.200.1:8081
+```
+
+Aquest accés activa la regla:
+
+- `Acces HTTP a servidor web detectat`
+
+---
+
+## Validació de les Alertes
+
+Quan es detecta un atac:
+
+1. Suricata genera una alerta a `eve.json`
+2. Filebeat envia els logs a **Elasticsearch**
+3. Les alertes es visualitzen a **Kibana**
+4. El sistema d'alerta temprana envia un **correu electrònic automàtic**
+
+Aquest procés permet verificar el correcte funcionament del sistema IDS implementat.
+
+---
+
+# Sistema de Resposta Activa (Active Response)
+
+A més de la detecció d'intrusions amb Suricata i el sistema d'alerta temprana per correu electrònic, el projecte implementa un mecanisme de **resposta activa automàtica** utilitzant **iptables**.
+
+Aquest sistema permet **bloquejar temporalment les IP que generen alertes d’atac** detectades per Suricata.
+
+Aquesta funcionalitat transforma el sistema en un model:
+
+IDS + Active Response
+
+similar al funcionament de moltes plataformes de seguretat modernes.
+
+---
+
+# Arquitectura de Resposta
+
+El procés de resposta funciona de la següent manera:
+
+```
+Atac des de Kali
+        ↓
+Suricata detecta l'atac
+        ↓
+Alerta registrada a eve.json
+        ↓
+Script de monitorització detecta l'alerta
+        ↓
+Enviament d'alerta per correu
+        ↓
+Bloqueig automàtic de la IP amb iptables
+        ↓
+IP bloquejada temporalment
+        ↓
+Desbloqueig automàtic després del temps definit
+```
+
+Aquest sistema permet **reaccionar automàticament davant determinats tipus d'atac**.
+
+---
+
+# Bloqueig Automàtic amb iptables
+
+Quan es detecta una alerta crítica (per exemple un atac de força bruta SSH), el sistema afegeix una regla de bloqueig al firewall.
+
+Exemple de regla aplicada:
+
+```bash
+iptables -A SURICATA_BLOCK -s IP_ATACANT -j DROP
+```
+
+Aquesta regla impedeix que la IP atacant continuï enviant trànsit cap a la infraestructura.
+
+---
+
+# Cadena Personalitzada SURICATA_BLOCK
+
+Per gestionar els bloquejos de manera organitzada es va crear una cadena específica d’iptables anomenada:
+
+```
+SURICATA_BLOCK
+```
+
+Aquesta cadena s'insereix dins de la cadena **FORWARD** del firewall.
+
+```bash
+iptables -I FORWARD 1 -j SURICATA_BLOCK
+```
+
+D’aquesta manera tots els paquets que travessen el router IDS són verificats contra les regles de bloqueig.
+
+---
+
+# Ús de la Cadena FORWARD
+
+El bloqueig s’aplica a la cadena **FORWARD** perquè el servidor IDS actua com a **router entre dues xarxes internes**.
+
+Topologia simplificada:
+
+```
+Kali (192.168.100.x)
+        │
+        │
+ IDS / Suricata Router
+        │
+        │
+Infraestructura (192.168.200.x)
+```
+
+En aquest escenari el servidor IDS **no és el destí del trànsit**, sinó que el reenvia entre xarxes.
+
+Per aquest motiu el filtratge es realitza a la cadena:
+
+```
+FORWARD
+```
+
+en lloc de la cadena `INPUT`.
+
+Això permet bloquejar el trànsit **abans que arribi als servidors interns**.
+
+---
+
+# Bloqueig Temporal d’IP
+
+El sistema implementa un mecanisme de **bloqueig temporal automàtic**.
+
+Quan es detecta una alerta crítica:
+
+1. es registra l'incident  
+2. s'envia un correu d'alerta  
+3. s'aplica una regla de bloqueig a iptables  
+4. s'espera el temps de bloqueig configurat  
+5. la regla es elimina automàticament  
+
+Durant el desenvolupament del laboratori es van utilitzar **60 segons de bloqueig per facilitar les proves**.
+
+En un entorn real aquest valor pot augmentar-se (per exemple 10 o 15 minuts).
+
+---
+
+# Tipus d’Arquitectura Implementada
+
+Encara que Suricata funciona principalment com a **IDS (Intrusion Detection System)**, la integració amb iptables permet implementar un comportament similar a un **IPS (Intrusion Prevention System)**.
+
+Per aquest motiu el sistema es pot descriure com:
+
+```
+IDS + Active Response (quasi IPS)
+```
+
+Aquest model és similar al funcionament d’eines com:
+
+- Fail2ban  
+- CrowdSec  
+- sistemes SOC amb resposta automatitzada  
+
+---
+
 # Visualització amb Elastic Stack
 
 Logs enviats amb **Filebeat** cap a **Elasticsearch** i visualitzats a **Kibana**.
@@ -719,41 +927,65 @@ rule.id: 1000001
 
 # Estat Actual del Projecte
 
-Automatització:
+## Automatització
 
 - Ansible control node funcional
 - Inventari configurat
 - Nodes gestionats operatius
 - Playbooks funcionant
 - Infraestructura Docker desplegada
+- Desplegament automatitzat de serveis amb Ansible
+- Configuració automatitzada de servidors Debian dins Docker
 
-Seguretat:
+---
 
-- IDS Suricata funcional
-- Regles ET Open carregades
-- Regla personalitzada implementada
-- Simulació d’atacs Nmap
-- Logs enviats a Elasticsearch
-- Alertes visualitzades a Kibana
+## Seguretat
+
+- IDS **Suricata** funcional
+- Regles **ET Open** carregades
+- Regles personalitzades per detectar:
+  - escaneigs de ports
+  - intents d'accés SSH
+  - força bruta SSH
+  - accessos a serveis web
+  - accessos a serveis Docker
+- Simulació d’atacs amb **Kali Linux** (Nmap, Hydra i curl)
+- Logs de Suricata enviats a **Elasticsearch** mitjançant **Filebeat**
+- Alertes visualitzades a **Kibana**
+- Sistema d’alerta temprana amb notificacions per correu electrònic
+- Monitorització automàtica del log **eve.json**
+
+---
+
+## Resposta davant incidents
+
+- Sistema de **resposta activa amb iptables**
+- Creació d’una cadena dedicada **SURICATA_BLOCK**
+- Bloqueig automàtic d’IP atacants detectades per Suricata
+- Bloqueig aplicat a la cadena **FORWARD** per protegir la infraestructura
+- Integració amb el sistema d’alerta
+- Bloqueig temporal d’IP amb desbloqueig automàtic
+- Sistema similar a un model **IDS + Active Response (quasi IPS)**
 
 ---
 
 # Tecnologies Utilitzades
+
 Aquest projecte combina diverses tecnologies d’administració de sistemes i ciberseguretat.
 
 - **Ansible** → automatització de configuració
 - **Docker** → infraestructura de contenidors
-- **Suricata** → sistema IDS/IPS
+- **Suricata** → sistema IDS
 - **Elasticsearch** → indexació de logs
 - **Kibana** → visualització d'alertes
 - **Filebeat** → enviament de logs
+- **Postfix** → enviament d'alertes per correu
 - **Kali Linux** → simulació d’atacs
 - **Ubuntu Server** → servidor IDS
 - **VirtualBox** → virtualització del laboratori
-
 ---
 
-# Autor
+# Autor - Jan Garcia
 
 Projecte desenvolupat com a pràctica d’**ASIX2** combinant:
 
