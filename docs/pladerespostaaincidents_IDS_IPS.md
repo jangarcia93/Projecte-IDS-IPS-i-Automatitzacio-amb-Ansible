@@ -2,34 +2,41 @@
 
 ## 1. Objectiu
 
-Aquest document defineix el procediment estructurat de resposta davant incidents de seguretat detectats pel sistema IDS/IPS basat en Suricata.
+Aquest document defineix el procediment de resposta davant incidents de seguretat detectats pel sistema **IDS basat en Suricata** implementat al laboratori.
+
+El sistema combina:
+
+- Suricata IDS
+- Elastic Stack (Filebeat + Elasticsearch + Kibana)
+- sistema d'alerta temprana per correu electrònic
+- resposta automàtica mitjançant **iptables**
 
 Els objectius principals són:
 
-- Detectar incidents de manera ràpida i fiable
-- Reduir l’impacte sobre els sistemes
-- Preservar evidències
-- Garantir la recuperació segura
-- Aplicar millora contínua
+- detectar activitats sospitoses a la xarxa
+- alertar l’administrador de manera immediata
+- aplicar mesures de contenció automàtiques
+- reduir l’impacte dels atacs
+- millorar contínuament la seguretat del sistema
 
 ---
 
-## 2. Classificació d’Incidents
+# 2. Classificació d’Incidents
 
-Els incidents es classifiquen segons la seva criticitat:
+Els incidents detectats pel sistema IDS es classifiquen segons la seva criticitat.
 
 | Nivell | Descripció | Exemple | Acció |
-|--------|------------|----------|--------|
-| **Baix** | Activitat sospitosa sense impacte directe | Escaneig de ports (Nmap) | Monitorització |
-| **Mitjà** | Intent d’explotació sense compromís | Força bruta SSH | Bloqueig temporal |
-| **Alt** | Intent amb possible impacte real | SQL Injection detectada | Bloqueig immediat + revisió servei |
-| **Crític** | Compromís confirmat | Accés no autoritzat a BD | Aïllament node + notificació urgent |
+|------|------|------|------|
+| **Baix** | Activitat sospitosa sense impacte | Escaneig de ports (Nmap) | Monitorització |
+| **Mitjà** | Intent d'accés repetit | Intent d'accés SSH | Alerta + seguiment |
+| **Alt** | Atac automatitzat | Força bruta SSH (Hydra) | Bloqueig IP automàtic |
+| **Crític** | Accés no autoritzat confirmat | Compromís del servidor | Aïllament del sistema |
 
 ---
 
-## 3. Procés de Resposta a Incidents
+# 3. Procés de Resposta a Incidents
 
-El procés segueix el model estàndard:
+El procés segueix les fases habituals de gestió d’incidents de seguretat:
 
 1. Detecció  
 2. Anàlisi  
@@ -40,158 +47,225 @@ El procés segueix el model estàndard:
 
 ---
 
-## 4. Diagrama de Flux
+# 4. Diagrama de Flux
 
 ```mermaid
 flowchart TD
 
-A[Alerta generada per IDS<br>Suricata / eve.json]
-B[Validació de l'alerta<br>Anàlisi de logs]
-C{És fals positiu?}
-D[Ajust de regles<br>Monitorització]
-E[Classificació de l'incident<br>Baix / Mitjà / Alt / Crític]
-F[Contenció<br>Bloqueig IP / Aïllament]
-G[Erradicació<br>Correcció vulnerabilitat]
-H[Recuperació<br>Restauració servei]
-I[Post-Incident<br>Informe + KPIs + millores]
+A[Atac detectat per Suricata]
+B[Alerta registrada a eve.json]
+C[Logs enviats a Elasticsearch]
+D[Visualització a Kibana]
+E[Script d'alerta temprana]
+F{Tipus d'incident}
+G[Monitorització]
+H[Bloqueig IP amb iptables]
+I[Revisió del servei]
+J[Informe d'incident]
 
 A --> B
 B --> C
-C -- Sí --> D
-C -- No --> E
+C --> D
+D --> E
 E --> F
-F --> G
-G --> H
+F -->|Baix| G
+F -->|Mitjà| G
+F -->|Alt| H
 H --> I
+I --> J
 ```
 
 ---
 
-## 5. Fases del Procés
+# 5. Fases del Procés
 
-### 5.1 Detecció
+## 5.1 Detecció
 
-La detecció es produeix quan:
+La detecció es produeix quan **Suricata activa una regla de seguretat**.
 
-- Suricata genera una alerta
-- Es registra un esdeveniment a `eve.json`
-- Es visualitza un esdeveniment crític al sistema de monitorització
+Aquesta alerta queda registrada al fitxer:
 
-Es registra:
+```
+/var/log/suricata/eve.json
+```
 
-- Timestamp
+Informació registrada:
+
+- timestamp
 - IP origen
 - IP destí
-- Port
-- Regla activada
-- Severitat
+- port
+- signatura de la regla
+- tipus d'esdeveniment
+
+Exemples de signatures detectades al laboratori:
+
+- `SCAN detectat contra infraestructura`
+- `Possible escaneig de ports`
+- `Intent d'acces SSH detectat`
+- `Possible brute force SSH`
+- `Acces HTTP a servidor web detectat`
 
 ---
 
-### 5.2 Anàlisi
+## 5.2 Anàlisi
 
-Objectiu: determinar si es tracta d’un:
+Les alertes són analitzades mitjançant:
 
-- Fals positiu
-- Intent automatitzat sense impacte
-- Atac real
-- Compromís confirmat
+- logs de Suricata
+- dashboards de Kibana
+- correlació d'esdeveniments
+
+Objectiu:
+
+- determinar si és un fals positiu
+- identificar l’origen de l’atac
+- classificar la gravetat de l’incident
+
+---
+
+## 5.3 Contenció
+
+Segons el tipus d’incident es prenen diferents mesures.
+
+### Incident Baix
+
+Exemple:
+
+- escaneig de ports amb Nmap
 
 Accions:
 
-- Revisió detallada de logs
-- Correlació amb altres esdeveniments
-- Anàlisi del patró de trànsit
-- Comprovació de repeticions
+- registrar l'esdeveniment
+- monitoritzar l'activitat
 
 ---
 
-### 5.3 Contenció
+### Incident Mitjà
 
-#### Incident Baix
-- Monitorització
-- Sense bloqueig immediat
+Exemple:
 
-#### Incident Mitjà
-- Bloqueig IP temporal (iptables)
-- Seguiment durant 24 hores
+- intents puntuals d'accés SSH
 
-#### Incident Alt
-- Bloqueig immediat
-- Revisió del servei afectat
-- Monitorització reforçada
+Accions:
 
-#### Incident Crític
-- Aïllament del node
-- Bloqueig total connexions externes
-- Preservació d’evidències
-- Notificació immediata
+- registre de l'esdeveniment als logs de Suricata
+- visualització a Kibana
+- monitorització de l'activitat
+
+En aquest nivell no s'aplica bloqueig automàtic ni alerta immediata per evitar falsos positius.
 
 ---
 
-### 5.4 Erradicació
+### Incident Alt
 
-Objectiu: eliminar la causa arrel.
+Exemple:
 
-Exemples:
+- atac de força bruta SSH detectat amb Hydra
 
-- Aplicació de pegats
-- Actualització de regles IDS
-- Canvi de credencials
-- Eliminació d’accessos compromesos
+Accions:
 
----
+- alerta immediata per correu
+- bloqueig automàtic de la IP atacant amb **iptables**
 
-### 5.5 Recuperació
+Exemple de bloqueig:
 
-- Restauració del servei
-- Verificació d’integritat
-- Monitorització intensiva durant 48h
-- Validació de no persistència de l’atac
+```bash
+iptables -A INPUT -s IP_ATACANT -j DROP
+```
 
----
-
-### 5.6 Post-Incident
-
-Després de cada incident es genera:
-
-- Informe tècnic detallat
-- Temps de detecció (MTTD)
-- Temps de resposta (MTTR)
-- Impacte real
-- Propostes de millora
+Aquest mecanisme implementa una **resposta activa davant atacs detectats**.
 
 ---
 
-## 6. KPIs de Seguretat
+### Incident Crític
+
+Exemple:
+
+- compromís del servidor
+- accés no autoritzat confirmat
+
+Accions:
+
+- alerta immediata a l'administrador
+- revisió manual dels logs
+- anàlisi del sistema afectat
+- possible aïllament del node de forma manual
+
+En incidents crítics la resposta requereix intervenció manual de l’administrador per garantir una anàlisi adequada i evitar interrupcions no controlades del sistema.
+
+---
+
+## 5.4 Erradicació
+
+Objectiu: eliminar la causa de l'incident.
+
+Exemples d'accions:
+
+- actualització de configuracions
+- modificació de regles IDS
+- reforç de credencials
+- revisió de serveis exposats
+
+---
+
+## 5.5 Recuperació
+
+Després de la contenció:
+
+- verificar el funcionament dels serveis
+- revisar la integritat del sistema
+- continuar monitoritzant el trànsit
+
+---
+
+## 5.6 Post-Incident
+
+Després de cada incident es revisa:
+
+- tipus d'atac
+- regles activades
+- eficàcia de la resposta
+
+Es poden aplicar millores com:
+
+- ajust de regles
+- millora de llindars de detecció
+- ampliació de mecanismes d'automatització
+
+---
+
+# 6. KPIs de Seguretat
 
 | Indicador | Objectiu |
-|------------|----------|
-| MTTD | < 30 segons |
-| MTTR (Crític) | < 2 minuts |
-| Falsos positius | < 10% |
+|------|------|
+| Temps de detecció | < 30 segons |
+| Temps de resposta | < 1 minut |
 | Temps bloqueig IP | < 60 segons |
+| Falsos positius | < 10% |
 
 ---
 
-## 7. Millora Contínua
+# 7. Millora Contínua
 
-Després de cada incident:
+El sistema es millora constantment mitjançant:
 
-- Revisió de regles
-- Ajust de llindars
-- Reducció de falsos positius
-- Automatització de bloqueigs
-
-Es realitza revisió trimestral del sistema IDS/IPS.
+- revisió de regles de Suricata
+- ajust de signatures personalitzades
+- millora del sistema d'alerta
+- optimització de la resposta automàtica
 
 ---
 
-## 8. Conclusions
+# 8. Conclusions
 
-Aquest pla transforma el sistema IDS/IPS en una solució completa de detecció i resposta estructurada, garantint:
+Aquest pla permet integrar **detecció i resposta davant incidents** dins de la infraestructura del laboratori.
 
-- Professionalització del procés
-- Reducció del risc operatiu
-- Capacitat de resposta ràpida
-- Evolució constant del sistema
+La combinació de:
+
+- Suricata IDS
+- Elastic Stack
+- sistema d'alerta temprana
+- resposta automàtica amb iptables
+
+permet implementar un sistema funcional de **detecció i resposta a intrusions (IDS + Active Response)**.
