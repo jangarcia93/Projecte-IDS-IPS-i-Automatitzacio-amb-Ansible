@@ -492,29 +492,210 @@ Instal·lació regles ET Open:
 sudo suricata-update
 ```
 
-Regla personalitzada:
+# Configuració de Regles IDS
 
-Fitxer:
+Les regles personalitzades utilitzades en aquest projecte es defineixen al fitxer:
 
-```
+```text
 /var/lib/suricata/rules/local.rules
 ```
 
+Aquestes regles estan dissenyades específicament per detectar activitats sospitoses contra la infraestructura desplegada amb Ansible.
+
+```text
+# Detectar escanejos contra la infraestructura
+alert tcp $EXTERNAL_NET any -> $HOME_NET any (msg:"SCAN detectat contra infraestructura"; flow:to_server; flags:S; threshold:type threshold, track by_src, count 10, seconds 5; sid:100001; rev:1;)
+
+# Detectar intents d'acces SSH
+alert tcp $EXTERNAL_NET any -> $HOME_NET [2221,2222] (msg:"Intent d'acces SSH detectat"; sid:100002; rev:1;)
+
+# Detectar força bruta SSH
+alert tcp $EXTERNAL_NET any -> $HOME_NET [2221,2222] (msg:"Possible brute force SSH"; flow:stateless; flags:S; detection_filter:track by_src, count 5, seconds 60; sid:100003; rev:2;)
+
+# Detectar acces al servidor web desplegat amb Ansible
+alert tcp $EXTERNAL_NET any -> $HOME_NET [8081,8082] (msg:"Acces HTTP a servidor web detectat"; sid:100004; rev:1;)
+
+# Detectar escaneig de ports
+alert tcp $EXTERNAL_NET any -> $HOME_NET any (msg:"Possible escaneig de ports"; flow:to_server; flags:S; threshold:type threshold, track by_src, count 20, seconds 10; sid:100005; rev:1;)
+
+# Detectar acces a serveis Docker exposats
+alert tcp $EXTERNAL_NET any -> $HOME_NET [2221,2222,8081,8082] (msg:"Acces a serveis Docker Infraestructura Ansible"; sid:100006; rev:1;)
+```
+
+Aquestes regles permeten detectar diferents tipus d'activitat maliciosa dins del laboratori:
+
+- escaneigs de ports  
+- intents d'accés SSH  
+- possibles atacs de força bruta  
+- accessos als serveis desplegats amb Ansible  
+- activitat de reconeixement contra la infraestructura  
+
+---
+
+# Sistema d'Alerta Temprana
+
+A més de la detecció amb Suricata i la visualització amb Elastic Stack, s'ha implementat un **sistema d'alerta temprana per correu electrònic**.
+
+Aquest sistema permet avisar immediatament l'administrador quan es detecten determinats tipus d'atacs.
+
+El sistema funciona monitoritzant el fitxer de logs estructurat de Suricata:
+
+```text
+/var/log/suricata/eve.json
+```
+
+Quan apareix una alerta rellevant, s'envia automàticament un correu electrònic amb la informació de l'atac.
+
+---
+
+## Característiques del Sistema d'Alerta
+
+- monitorització contínua del fitxer `eve.json`
+- detecció d'esdeveniments `alert` generats per Suricata
+- filtratge de signatures específiques
+- extracció automàtica d'informació de l'alerta
+- enviament automàtic de correus electrònics
+- integració amb servidor SMTP (Postfix + Gmail)
+- sistema de deduplicació temporal d'alertes
+- limitació d'enviament d'un correu cada 300 segons per signatura
+- execució automatitzada com a servei systemd
+- funcionament permanent en segon pla
+
+---
+
+## Script d'Alerta
+
+El sistema d'alerta es basa en el següent script:
+
+```text
+/usr/local/bin/suricata-alert.sh
+```
+
 ```bash
-alert tcp any any -> $HOME_NET any (flags:S; msg:"SCAN TCP SYN detectat"; sid:1000001; rev:1;)
+#!/bin/bash
+
+LOG="/var/log/suricata/eve.json"
+EMAIL="admin@example.com"
+STATE_DIR="/var/lib/suricata-alert"
+COOLDOWN=300
+
+mkdir -p "$STATE_DIR"
+
+tail -Fn0 "$LOG" | while read -r line; do
+
+    echo "$line" | grep '"event_type":"alert"' >/dev/null || continue
+
+    SIGNATURE=$(echo "$line" | grep -oP '"signature":"\K[^"]+')
+    SRC_IP=$(echo "$line" | grep -oP '"src_ip":"\K[^"]+')
+    DEST_IP=$(echo "$line" | grep -oP '"dest_ip":"\K[^"]+')
+    TIME=$(echo "$line" | grep -oP '"timestamp":"\K[^"]+')
+
+    case "$SIGNATURE" in
+        "Possible brute force SSH"|"Possible escaneig de ports"|"Acces a serveis Docker Infraestructura Ansible"|"SCAN detectat contra infraestructura")
+            ;;
+        *)
+            continue
+            ;;
+    esac
+
+    SAFE_NAME=$(echo "$SIGNATURE" | tr ' /' '__' | tr -cd '[:alnum:]_-')
+    STATE_FILE="$STATE_DIR/$SAFE_NAME.last"
+
+    NOW=$(date +%s)
+
+    if [ -f "$STATE_FILE" ]; then
+        LAST_SENT=$(cat "$STATE_FILE" 2>/dev/null)
+    else
+        LAST_SENT=0
+    fi
+
+    ELAPSED=$((NOW - LAST_SENT))
+
+    if [ "$ELAPSED" -ge "$COOLDOWN" ]; then
+        {
+            echo "Alerta IDS detectada"
+            echo
+            echo "Hora: $TIME"
+            echo "IP origen: $SRC_IP"
+            echo "IP destí: $DEST_IP"
+            echo "Signatura: $SIGNATURE"
+            echo
+            echo "Revisa el dashboard de Kibana per més informació."
+        } | mail -s "ALERTA IDS - $SIGNATURE" "$EMAIL"
+
+        echo "$NOW" > "$STATE_FILE"
+    fi
+
+done
 ```
 
 ---
 
-# Simulació d’Atacs
+## Servei Systemd
 
-Escaneig des de Kali:
+Per garantir que el sistema d'alerta funcioni permanentment, l'script s'executa com a servei de systemd.
 
-```bash
-nmap -sS -T4 -p- 192.168.200.x
+Fitxer del servei:
+
+```text
+/etc/systemd/system/suricata-alert.service
 ```
 
-Aquest trànsit passa per l’IDS i genera alertes.
+```ini
+[Unit]
+Description=Alerta per correu de Suricata
+After=network.target postfix.service suricata.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/suricata-alert.sh
+Restart=always
+RestartSec=5
+User=root
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Activació del servei:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable suricata-alert.service
+sudo systemctl start suricata-alert.service
+```
+
+Verificació:
+
+```bash
+sudo systemctl status suricata-alert.service
+```
+
+---
+
+## Funcionament del Sistema d'Alerta
+
+El flux complet del sistema és el següent:
+
+```
+Atac des de Kali
+      ↓
+Suricata detecta l'activitat sospitosa
+      ↓
+Suricata registra l'alerta a eve.json
+      ↓
+Script de monitorització detecta l'alerta
+      ↓
+Filtrat de signatures rellevants
+      ↓
+Sistema de deduplicació temporal
+      ↓
+Enviament d'alerta per correu electrònic
+      ↓
+Administrador rep notificació immediata
+```
+
+Aquest mecanisme permet implementar un **sistema d'alerta temprana davant possibles atacs contra la infraestructura**.
 
 ---
 
