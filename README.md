@@ -483,26 +483,24 @@ sudo suricata -c /etc/suricata/suricata.yaml -i eth1
 ```
 
 ---
+## Configuració de Regles
 
-# Configuració de Regles
-
-Instal·lació regles ET Open:
-
+### Instal·lació regles ET Open
 ```bash
 sudo suricata-update
 ```
+---
 
-# Configuració de Regles IDS
+## Configuració de Regles IDS
 
 Les regles personalitzades utilitzades en aquest projecte es defineixen al fitxer:
-
-```text
+```bash
 /var/lib/suricata/rules/local.rules
 ```
-
 Aquestes regles estan dissenyades específicament per detectar activitats sospitoses contra la infraestructura desplegada amb Ansible.
 
-```text
+### Regles d'entrada (EXTERNAL_NET → HOME_NET)
+```bash
 # Detectar escanejos contra la infraestructura
 alert tcp $EXTERNAL_NET any -> $HOME_NET any (msg:"SCAN detectat contra infraestructura"; flow:to_server; flags:S; threshold:type threshold, track by_src, count 10, seconds 5; sid:100001; rev:1;)
 
@@ -520,7 +518,6 @@ alert tcp $EXTERNAL_NET any -> $HOME_NET any (msg:"Possible escaneig de ports"; 
 
 # Detectar acces a serveis Docker exposats
 alert tcp $EXTERNAL_NET any -> $HOME_NET [2221,2222,8081,8082] (msg:"Acces a serveis Docker Infraestructura Ansible"; sid:100006; rev:1;)
-```
 
 Aquestes regles permeten detectar diferents tipus d'activitat maliciosa dins del laboratori:
 
@@ -529,6 +526,33 @@ Aquestes regles permeten detectar diferents tipus d'activitat maliciosa dins del
 - possibles atacs de força bruta  
 - accessos als serveis desplegats amb Ansible  
 - activitat de reconeixement contra la infraestructura  
+```
+---
+
+## Regles de monitorització interna (LAN → INTERNET_NET)
+
+A més de les regles d’entrada, s’han implementat regles orientades a detectar comportament sospitós originat des de la xarxa interna (LAN), amb l’objectiu d’identificar possibles màquines compromeses o activitat anòmala.
+```bash
+# Escaneig sortint (SYN)
+alert tcp $HOME_NET any -> $INTERNET_NET any (msg:"SCAN sortint des de LAN"; flow:to_server; flags:S; threshold:type threshold, track by_src, count 20, seconds 10; sid:200001; rev:1;)
+
+# Connexions a serveis administratius externs
+alert tcp $HOME_NET any -> $INTERNET_NET [22,3389] (msg:"Connexio a serveis administratius externs"; sid:200002; rev:1;)
+
+# Volum alt de connexions HTTP/HTTPS
+alert tcp $HOME_NET any -> $INTERNET_NET [80,443] (msg:"Volum alt connexions web sortints"; flow:to_server; threshold:type threshold, track by_src, count 100, seconds 30; sid:200003; rev:1;)
+
+# Connexions repetides sospitoses
+alert tcp $HOME_NET any -> $INTERNET_NET any (msg:"Connexions repetides sospitoses des de LAN"; flow:to_server; detection_filter:track by_src, count 50, seconds 20; sid:200004; rev:1;)
+```
+Aquest conjunt de regles permet detectar:
+
+- escaneigs de ports iniciats des de la xarxa interna  
+- connexions a serveis administratius externs (SSH, RDP)  
+- comportament anòmal amb alt volum de trànsit web  
+- patrons de connexió repetitiva que poden indicar automatització o malware  
+
+Aquest enfocament amplia el sistema IDS, permetent no només detectar atacs externs sinó també possibles compromisos interns dins de la infraestructura.
 
 ---
 
@@ -651,6 +675,7 @@ tail -Fn0 "$LOG" | while read -r line; do
     fi
 
 done
+
 ```
 
 ---
