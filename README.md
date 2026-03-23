@@ -973,6 +973,54 @@ rule.id: 1000001
 
 ---
 
+# Firewall amb iptables
+
+Per complementar el sistema IDS, s’ha implementat un firewall amb **iptables** per controlar el trànsit i aplicar mesures de seguretat a nivell de xarxa.
+
+## Regles implementades
+
+S’han configurat regles per bloquejar connexions sortints des de la LAN cap a ports sensibles:
+```bash
+sudo iptables -A FORWARD -i enp0s3 -o enp0s9 -p tcp --dport 23 -j DROP  
+sudo iptables -A FORWARD -i enp0s3 -o enp0s9 -p tcp --dport 139 -j DROP  
+sudo iptables -A FORWARD -i enp0s3 -o enp0s9 -p tcp --dport 445 -j DROP  
+sudo iptables -A FORWARD -i enp0s3 -o enp0s9 -p tcp --dport 3389 -j DROP  
+```
+Aquests ports corresponen a serveis potencialment vulnerables o d’administració:
+
+- Telnet (23)  
+- NetBIOS / SMB (139, 445)  
+- RDP (3389)  
+
+L’objectiu és evitar que dispositius interns compromesos puguin accedir a aquests serveis.
+
+---
+
+## Validació del funcionament
+
+S’ha validat el funcionament del firewall mitjançant proves de connexió:
+
+- telnet google.com 23  
+- nc -zv google.com 139  
+- nc -zv google.com 445  
+- nc -zv 8.8.8.8 3389  
+
+Aquestes connexions han estat bloquejades correctament.
+
+També s’ha verificat amb:
+```
+sudo iptables -L FORWARD -n -v  
+```
+on es pot observar l’increment dels comptadors en les regles DROP.
+
+---
+
+### Integració amb el sistema IDS
+
+El firewall treballa conjuntament amb Suricata, permetent no només detectar activitats sospitoses sinó també limitar el trànsit potencialment perillós.
+
+---
+
 # Estat Actual del Projecte
 
 ## Automatització
