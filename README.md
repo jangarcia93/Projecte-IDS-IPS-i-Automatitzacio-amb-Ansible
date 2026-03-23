@@ -481,6 +481,53 @@ Execució manual:
 ```bash
 sudo suricata -c /etc/suricata/suricata.yaml -i eth1
 ```
+---
+
+## Optimització de Suricata
+
+Per millorar el rendiment del sistema IDS, s’ha optimitzat la configuració de Suricata modificant el fitxer:
+```
+/etc/suricata/suricata.yaml
+```
+### Mode d'execució
+
+S’ha configurat el mode:
+```
+runmode: workers
+```
+Aquest mode permet processar paquets en paral·lel utilitzant múltiples fils, millorant el rendiment en sistemes multi-core.
+
+### Configuració AF-Packet
+
+S’ha utilitzat el mètode de captura **AF-Packet**, optimitzat amb:
+
+- cluster-type: cluster_flow → distribució del trànsit per fluxos
+- defrag: yes → reassemblatge de paquets fragmentats
+- use-mmap: yes → millora del rendiment en l'accés a memòria
+- mmap-locked: yes → evita swapping i millora estabilitat
+
+### Optimització de rendiment
+
+Paràmetres ajustats:
+```
+- detect-thread-ratio: 1.5  
+- max-pending-packets: 2048  
+```
+Aquests valors permeten:
+
+- augmentar la capacitat de processament de paquets  
+- reduir la latència en la detecció  
+- evitar pèrdua de paquets en situacions de càrrega  
+
+### Resultat
+
+Amb aquestes optimitzacions, Suricata és capaç de:
+
+- processar més trànsit en temps real  
+- millorar la detecció d’atacs  
+- mantenir estabilitat sota càrrega  
+
+Aquest ajust apropa el laboratori a un entorn real de producció.
 
 ---
 ## Configuració de Regles
