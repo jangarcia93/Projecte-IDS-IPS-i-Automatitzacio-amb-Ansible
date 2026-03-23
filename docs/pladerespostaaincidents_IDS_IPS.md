@@ -10,6 +10,8 @@ El sistema combina:
 - Elastic Stack (Filebeat + Elasticsearch + Kibana)
 - sistema d'alerta temprana per correu electrònic
 - resposta automàtica mitjançant **iptables**
+- firewall per control de trànsit de xarxa
+- antivirus ClamAV per protecció a nivell de sistema
 
 Els objectius principals són:
 
@@ -17,6 +19,7 @@ Els objectius principals són:
 - alertar l’administrador de manera immediata
 - aplicar mesures de contenció automàtiques
 - reduir l’impacte dels atacs
+- detectar possibles compromisos interns
 - millorar contínuament la seguretat del sistema
 
 ---
@@ -28,8 +31,8 @@ Els incidents detectats pel sistema IDS es classifiquen segons la seva criticita
 | Nivell | Descripció | Exemple | Acció |
 |------|------|------|------|
 | **Baix** | Activitat sospitosa sense impacte | Escaneig de ports (Nmap) | Monitorització |
-| **Mitjà** | Intent d'accés repetit | Intent d'accés SSH | Alerta + seguiment |
-| **Alt** | Atac automatitzat | Força bruta SSH (Hydra) | Bloqueig IP automàtic |
+| **Mitjà** | Intent d'accés repetit o comportament anòmal | Connexions sospitoses des de la LAN | Alerta + seguiment |
+| **Alt** | Atac automatitzat o comportament clarament maliciós | Força bruta SSH (Hydra), escaneig intern | Alerta + possible bloqueig |
 | **Crític** | Accés no autoritzat confirmat | Compromís del servidor | Aïllament del sistema |
 
 ---
@@ -60,8 +63,9 @@ E[Script d'alerta temprana]
 F{Tipus d'incident}
 G[Monitorització]
 H[Bloqueig IP amb iptables]
-I[Revisió del servei]
-J[Informe d'incident]
+I[Aplicació de regles firewall]
+J[Revisió del servei]
+K[Informe d'incident]
 
 A --> B
 B --> C
@@ -73,6 +77,7 @@ F -->|Mitjà| G
 F -->|Alt| H
 H --> I
 I --> J
+J --> K
 ```
 
 ---
@@ -85,18 +90,16 @@ La detecció es produeix quan **Suricata activa una regla de seguretat**.
 
 Aquesta alerta queda registrada al fitxer:
 
-```
 /var/log/suricata/eve.json
-```
 
 Informació registrada:
 
-- timestamp
-- IP origen
-- IP destí
-- port
-- signatura de la regla
-- tipus d'esdeveniment
+- timestamp  
+- IP origen  
+- IP destí  
+- port  
+- signatura de la regla  
+- tipus d'esdeveniment  
 
 Exemples de signatures detectades al laboratori:
 
@@ -105,6 +108,9 @@ Exemples de signatures detectades al laboratori:
 - `Intent d'acces SSH detectat`
 - `Possible brute force SSH`
 - `Acces HTTP a servidor web detectat`
+- `SCAN sortint des de LAN`
+- `Connexio a serveis administratius externs`
+- `Connexions repetides sospitoses des de LAN`
 
 ---
 
@@ -112,15 +118,16 @@ Exemples de signatures detectades al laboratori:
 
 Les alertes són analitzades mitjançant:
 
-- logs de Suricata
-- dashboards de Kibana
-- correlació d'esdeveniments
+- logs de Suricata  
+- dashboards de Kibana  
+- correlació d'esdeveniments  
 
 Objectiu:
 
-- determinar si és un fals positiu
-- identificar l’origen de l’atac
-- classificar la gravetat de l’incident
+- determinar si és un fals positiu  
+- identificar l’origen de l’atac  
+- detectar comportament anòmal intern  
+- classificar la gravetat de l’incident  
 
 ---
 
@@ -132,47 +139,45 @@ Segons el tipus d’incident es prenen diferents mesures.
 
 Exemple:
 
-- escaneig de ports amb Nmap
+- escaneig de ports extern
 
 Accions:
 
-- registrar l'esdeveniment
-- monitoritzar l'activitat
+- registrar l'esdeveniment  
+- monitoritzar l'activitat  
 
 ---
 
 ### Incident Mitjà
 
-Exemple:
+Exemples:
 
-- intents puntuals d'accés SSH
+- connexions sospitoses des de la LAN  
+- accés a serveis administratius externs  
 
 Accions:
 
-- registre de l'esdeveniment als logs de Suricata
-- visualització a Kibana
-- monitorització de l'activitat
-
-En aquest nivell no s'aplica bloqueig automàtic ni alerta immediata per evitar falsos positius.
+- registre als logs de Suricata  
+- visualització a Kibana  
+- notificació per correu  
+- seguiment de l’activitat  
 
 ---
 
 ### Incident Alt
 
-Exemple:
+Exemples:
 
 - atac de força bruta SSH detectat amb Hydra
 
 Accions:
 
-- alerta immediata per correu
-- bloqueig automàtic de la IP atacant amb **iptables**
+- alerta immediata per correu  
+- bloqueig automàtic de la IP amb **iptables**  
 
 Exemple de bloqueig:
 
-```bash
-iptables -A INPUT -s IP_ATACANT -j DROP
-```
+iptables -A INPUT -s IP_ATACANT -j DROP  
 
 Aquest mecanisme implementa una **resposta activa davant atacs detectats**.
 
@@ -182,17 +187,16 @@ Aquest mecanisme implementa una **resposta activa davant atacs detectats**.
 
 Exemple:
 
-- compromís del servidor
-- accés no autoritzat confirmat
+- compromís del servidor  
+- execució de malware detectat per ClamAV  
 
 Accions:
 
-- alerta immediata a l'administrador
-- revisió manual dels logs
-- anàlisi del sistema afectat
-- possible aïllament del node de forma manual
-
-En incidents crítics la resposta requereix intervenció manual de l’administrador per garantir una anàlisi adequada i evitar interrupcions no controlades del sistema.
+- alerta immediata a l'administrador  
+- revisió manual dels logs  
+- anàlisi del sistema  
+- possible aïllament del node  
+- escaneig complet amb antivirus  
 
 ---
 
@@ -202,10 +206,10 @@ Objectiu: eliminar la causa de l'incident.
 
 Exemples d'accions:
 
-- actualització de configuracions
-- modificació de regles IDS
-- reforç de credencials
-- revisió de serveis exposats
+- modificació de regles IDS  
+- reforç de configuracions  
+- revisió de serveis exposats  
+- eliminació de fitxers maliciosos detectats per ClamAV  
 
 ---
 
@@ -213,9 +217,10 @@ Exemples d'accions:
 
 Després de la contenció:
 
-- verificar el funcionament dels serveis
-- revisar la integritat del sistema
-- continuar monitoritzant el trànsit
+- verificar el funcionament dels serveis  
+- revisar la integritat del sistema  
+- continuar monitoritzant el trànsit  
+- validar que no hi ha activitat sospitosa interna  
 
 ---
 
@@ -223,15 +228,16 @@ Després de la contenció:
 
 Després de cada incident es revisa:
 
-- tipus d'atac
-- regles activades
-- eficàcia de la resposta
+- tipus d'atac  
+- regles activades  
+- eficàcia de la resposta  
 
-Es poden aplicar millores com:
+Millores aplicades:
 
-- ajust de regles
-- millora de llindars de detecció
-- ampliació de mecanismes d'automatització
+- ajust de regles de Suricata  
+- millora del firewall  
+- optimització de llindars  
+- ampliació del sistema d’alerta  
 
 ---
 
@@ -250,10 +256,11 @@ Es poden aplicar millores com:
 
 El sistema es millora constantment mitjançant:
 
-- revisió de regles de Suricata
-- ajust de signatures personalitzades
-- millora del sistema d'alerta
-- optimització de la resposta automàtica
+- revisió de regles de Suricata  
+- millora del firewall amb iptables  
+- ampliació de detecció de comportament intern  
+- optimització del sistema d’alerta  
+- integració de protecció a nivell de sistema amb antivirus  
 
 ---
 
@@ -263,9 +270,11 @@ Aquest pla permet integrar **detecció i resposta davant incidents** dins de la 
 
 La combinació de:
 
-- Suricata IDS
-- Elastic Stack
-- sistema d'alerta temprana
-- resposta automàtica amb iptables
+- Suricata IDS  
+- Elastic Stack  
+- sistema d'alerta temprana  
+- resposta automàtica amb iptables  
+- firewall de control de trànsit  
+- antivirus ClamAV  
 
-permet implementar un sistema funcional de **detecció i resposta a intrusions (IDS + Active Response)**.
+permet implementar un sistema complet de **detecció i resposta a intrusions (IDS + IPS)** amb capacitat de detectar tant amenaces externes com comportament sospitós intern.
