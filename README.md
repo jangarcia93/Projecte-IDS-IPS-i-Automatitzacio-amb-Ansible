@@ -1117,11 +1117,14 @@ Aquesta combinació permet implementar una estratègia de seguretat més complet
   - força bruta SSH
   - accessos a serveis web
   - accessos a serveis Docker
+  - activitat sospitosa des de la LAN (escaneigs sortints, connexions anòmales)
+- Definició de variables de xarxa (HOME_NET, EXTERNAL_NET, INTERNET_NET)
 - Simulació d’atacs amb **Kali Linux** (Nmap, Hydra i curl)
 - Logs de Suricata enviats a **Elasticsearch** mitjançant **Filebeat**
 - Alertes visualitzades a **Kibana**
 - Sistema d’alerta temprana amb notificacions per correu electrònic
 - Monitorització automàtica del log **eve.json**
+- Implementació d’antivirus ClamAV
 
 ---
 
@@ -1134,6 +1137,10 @@ Aquesta combinació permet implementar una estratègia de seguretat més complet
 - Integració amb el sistema d’alerta
 - Bloqueig temporal d’IP amb desbloqueig automàtic
 - Sistema similar a un model **IDS + Active Response (quasi IPS)**
+- Firewall amb iptables per control de trànsit:
+    - bloqueig de ports sensibles (Telnet, SMB, RDP)
+    - control del trànsit sortint des de la LAN
+    - validació mitjançant proves de connexió
 
 ---
 
@@ -1151,6 +1158,8 @@ Aquest projecte combina diverses tecnologies d’administració de sistemes i ci
 - **Kali Linux** → simulació d’atacs
 - **Ubuntu Server** → servidor IDS
 - **VirtualBox** → virtualització del laboratori
+- **iptables** → firewall i resposta activa
+- **ClamAV** → antivirus
 ---
 
 # Autor - Jan Garcia
