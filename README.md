@@ -518,7 +518,7 @@ alert tcp $EXTERNAL_NET any -> $HOME_NET any (msg:"Possible escaneig de ports"; 
 
 # Detectar acces a serveis Docker exposats
 alert tcp $EXTERNAL_NET any -> $HOME_NET [2221,2222,8081,8082] (msg:"Acces a serveis Docker Infraestructura Ansible"; sid:100006; rev:1;)
-
+```
 Aquestes regles permeten detectar diferents tipus d'activitat maliciosa dins del laboratori:
 
 - escaneigs de ports  
@@ -526,7 +526,6 @@ Aquestes regles permeten detectar diferents tipus d'activitat maliciosa dins del
 - possibles atacs de força bruta  
 - accessos als serveis desplegats amb Ansible  
 - activitat de reconeixement contra la infraestructura  
-```
 ---
 
 ## Regles de monitorització interna (LAN → INTERNET_NET)
