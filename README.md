@@ -1021,6 +1021,78 @@ El firewall treballa conjuntament amb Suricata, permetent no només detectar act
 
 ---
 
+# Antivirus amb ClamAV
+
+Per reforçar la seguretat del sistema, s’ha implementat **ClamAV** com a antivirus complementari dins del laboratori.
+
+ClamAV és una solució **lliure, lleugera i fàcil d’integrar** en entorns Linux, adequada per detectar fitxers maliciosos a nivell de sistema.
+
+---
+
+## Instal·lació i configuració
+
+S’ha instal·lat ClamAV i el seu servei de monitorització:
+```
+sudo apt install clamav clamav-daemon -y  
+```
+Actualització de la base de dades de signatures:
+```
+sudo systemctl stop clamav-freshclam  
+sudo freshclam  
+```
+Activació del servei d’actualització automàtica:
+```
+sudo systemctl start clamav-freshclam  
+sudo systemctl enable clamav-freshclam  
+```
+Activació del servei antivirus:
+```
+sudo systemctl start clamav-daemon  
+sudo systemctl enable clamav-daemon  
+```
+---
+
+## Anàlisi del sistema
+
+S’ha realitzat un escaneig del sistema per detectar possibles fitxers maliciosos:
+```
+clamscan -r /home  
+```
+Resultat:
+
+- fitxers analitzats correctament  
+- cap amenaça detectada  
+
+---
+
+## Validació del funcionament
+
+Per validar el funcionament de l’antivirus, s’ha utilitzat el fitxer de prova **EICAR**:
+```
+echo 'X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!H+H*' > eicar.com  
+```
+Escaneig del fitxer:
+```
+clamscan eicar.com  
+```
+Resultat:
+
+- fitxer detectat correctament com a maliciós  
+- confirmació del correcte funcionament de ClamAV  
+
+---
+
+## Integració amb el sistema de seguretat
+
+ClamAV complementa el sistema IDS basat en Suricata:
+
+- Suricata → detecció d’amenaces a nivell de xarxa  
+- ClamAV → detecció de malware a nivell de sistema  
+
+Aquesta combinació permet implementar una estratègia de seguretat més completa dins del laboratori, combinant **monitorització de xarxa i protecció de fitxers**.
+
+---
+
 # Estat Actual del Projecte
 
 ## Automatització
