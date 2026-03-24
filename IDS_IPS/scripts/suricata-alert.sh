@@ -1,7 +1,7 @@
 #!/bin/bash
 
 LOG="/var/log/suricata/eve.json"
-EMAIL="jangarciamae@gmail.com"
+EMAIL="admin@example.com"
 STATE_DIR="/var/lib/suricata-alert"
 COOLDOWN=300
 BAN_TIME=600
@@ -21,7 +21,7 @@ tail -Fn0 "$LOG" | while read -r line; do
     TIME=$(echo "$line" | grep -oP '"timestamp":"\K[^"]+')
 
     case "$SIGNATURE" in
-        "Possible brute force SSH"|"Possible escaneig de ports"|"Acces a serveis Docker Infraestructura Ansible"|"SCAN detectat contra infraestructura")
+        "Possible brute force SSH"|"Possible escaneig de ports"|"Acces a serveis Docker Infraestructura Ansible"|"SCAN detectat contra infraestructura"|"SCAN sortint des de LAN")
             ;;
         *)
             continue
