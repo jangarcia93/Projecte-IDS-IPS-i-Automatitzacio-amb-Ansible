@@ -1,3 +1,4 @@
+#REGLES EXTERNAL --> HOME
 # Detectar escanejos contra la infraestructura
 alert tcp $EXTERNAL_NET any -> $HOME_NET any (msg:"SCAN detectat contra infraestructura"; flow:to_server; flags:S; threshold:type threshold, track by_src, count 10, seconds 5; sid:100001; rev:1;)
 
@@ -15,3 +16,16 @@ alert tcp $EXTERNAL_NET any -> $HOME_NET any (msg:"Possible escaneig de ports"; 
 
 # Detectar acces a serveis Docker exposats
 alert tcp $EXTERNAL_NET any -> $HOME_NET [2221,2222,8081,8082] (msg:"Acces a serveis Docker Infraestructura Ansible"; sid:100006; rev:1;)
+
+#REGLES HOME --> INTERNET
+# Escaneig sortint (SYN)
+alert tcp $HOME_NET any -> $INTERNET_NET any (msg:"SCAN sortint des de LAN"; flow:to_server; flags:S; threshold:type threshold, track by_src, count 20, seconds 10; sid:200001; rev:1;)
+
+# Connexions a serveis administratius externs
+alert tcp $HOME_NET any -> $INTERNET_NET [22,3389] (msg:"Connexio a serveis administratius externs"; sid:200002; rev:1;)
+
+# Volum alt de connexions HTTP/HTTPS
+alert tcp $HOME_NET any -> $INTERNET_NET [80,443] (msg:"Volum alt connexions web sortints"; flow:to_server; threshold:type threshold, track by_src, count 100, seconds 30; sid:200003; rev:1;)
+
+# Connexions repetides sospitoses
+alert tcp $HOME_NET any -> $INTERNET_NET any (msg:"Connexions repetides sospitoses des de LAN"; flow:to_server; detection_filter:track by_src, count 50, seconds 20; sid:200004; rev:1;)
