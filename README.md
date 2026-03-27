@@ -798,10 +798,13 @@ Aquest mecanisme permet implementar un **sistema d'alerta temprana davant possib
 
 Per validar el funcionament del sistema IDS es van simular diferents atacs des d'una màquina **Kali Linux** situada al segment d'atac de la xarxa.
 
+A més, es van realitzar proves de comportament sospitós des de la xarxa interna cap a l’exterior per simular possibles equips compromesos.
+
 Aquestes proves permeten verificar que:
 
 - Suricata detecta activitat sospitosa
 - les regles personalitzades funcionen correctament
+- es detecten tant atacs externs com comportament intern anòmal
 - les alertes apareixen a Kibana
 - el sistema d'alerta temprana envia correus electrònics
 
@@ -851,6 +854,45 @@ Aquest accés activa la regla:
 
 ---
 
+## Simulació d’Activitat Interna Sospitosa (LAN → Internet)
+
+Per validar la detecció de comportament anòmal dins la xarxa, es van realitzar proves des de la LAN cap a serveis externs.
+
+### Escaneig sortint
+
+```bash
+nmap -Pn -p 1-1000 8.8.8.8
+```
+
+Activa:
+
+- `SCAN sortint des de LAN`
+
+### Connexions a serveis administratius externs
+
+```bash
+nc -zv 8.8.8.8 22
+nc -zv 8.8.8.8 3389
+```
+
+Activa:
+
+- `Connexio a serveis administratius externs`
+
+### Connexions repetides (comportament sospitós)
+
+```bash
+for i in {1..60}; do nc -zv 8.8.8.8 80; done
+```
+
+Activa:
+
+- `Connexions repetides sospitoses des de LAN`
+
+Aquestes proves simulen el comportament d’un equip intern potencialment compromès.
+
+---
+
 ## Validació de les Alertes
 
 Quan es detecta un atac:
@@ -859,8 +901,9 @@ Quan es detecta un atac:
 2. Filebeat envia els logs a **Elasticsearch**
 3. Les alertes es visualitzen a **Kibana**
 4. El sistema d'alerta temprana envia un **correu electrònic automàtic**
+5. En casos crítics, s’aplica bloqueig automàtic amb **iptables**
 
-Aquest procés permet verificar el correcte funcionament del sistema IDS implementat.
+Aquest procés permet verificar el correcte funcionament del sistema IDS i la seva capacitat de resposta davant amenaces externes i internes.
 
 ---
 
