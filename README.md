@@ -684,26 +684,27 @@ tail -Fn0 "$LOG" | while read -r line; do
     fi
 
     ELAPSED=$((NOW - LAST_SENT))
+    ACTION_MSG="Sense resposta automàtica."
 
-    if [ "$ELAPSED" -ge "$COOLDOWN" ]; then
-        ACTION_MSG="Sense resposta automàtica."
+    # Bloqueig immediat independent del cooldown
+    if [ "$SIGNATURE" = "Possible brute force SSH" ]; then
+        if ! iptables -C "$CHAIN" -s "$SRC_IP" -j DROP 2>/dev/null; then
+            iptables -A "$CHAIN" -s "$SRC_IP" -j DROP
+            echo "$(date '+%F %T') - IP $SRC_IP bloquejada temporalment durant $BAN_TIME segons" >> "$BLOCK_LOG"
+            ACTION_MSG="IP atacant bloquejada temporalment durant $BAN_TIME segons."
 
-        if [ "$SIGNATURE" = "Possible brute force SSH" ]; then
-            if ! iptables -C "$CHAIN" -s "$SRC_IP" -j DROP 2>/dev/null; then
-                iptables -A "$CHAIN" -s "$SRC_IP" -j DROP
-                echo "$(date '+%F %T') - IP $SRC_IP bloquejada temporalment durant $BAN_TIME segons" >> "$BLOCK_LOG"
-                ACTION_MSG="IP atacant bloquejada temporalment durant $BAN_TIME segons."
-
-                (
-                    sleep "$BAN_TIME"
-                    iptables -D "$CHAIN" -s "$SRC_IP" -j DROP 2>/dev/null
-                    echo "$(date '+%F %T') - IP $SRC_IP desbloquejada automàticament" >> "$BLOCK_LOG"
-                ) &
-            else
-                ACTION_MSG="La IP atacant ja estava bloquejada temporalment."
-            fi
+            (
+                sleep "$BAN_TIME"
+                iptables -D "$CHAIN" -s "$SRC_IP" -j DROP 2>/dev/null
+                echo "$(date '+%F %T') - IP $SRC_IP desbloquejada automàticament" >> "$BLOCK_LOG"
+            ) &
+        else
+            ACTION_MSG="La IP atacant ja estava bloquejada temporalment."
         fi
+    fi
 
+    # Correu subjecte a cooldown
+    if [ "$ELAPSED" -ge "$COOLDOWN" ]; then
         {
             echo "Alerta IDS detectada"
             echo
