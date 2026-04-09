@@ -883,7 +883,7 @@ Activa:
 ### Connexions repetides (comportament sospitós)
 
 ```bash
-for i in {1..60}; do nc -zv 8.8.8.8 80; done
+for i in {1..300}; do nc -z -w1 1.1.1.1 80 >/dev/null 2>&1; done
 ```
 
 Activa:
