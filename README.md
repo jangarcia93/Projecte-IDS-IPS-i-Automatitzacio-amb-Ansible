@@ -1111,6 +1111,34 @@ on es pot observar l’increment dels comptadors en les regles DROP.
 El firewall treballa conjuntament amb Suricata, permetent no només detectar activitats sospitoses sinó també limitar el trànsit potencialment perillós.
 
 ---
+## Protecció d’accés als serveis (iptables)
+
+Per evitar l’exposició del sistema a través de la IP pública, s’han afegit regles a `iptables` per restringir l’accés als serveis crítics.
+
+S’ha limitat l’accés a:
+
+- SSH (port 22)  
+- Kibana (port 5601)  
+
+Només es permet connexió des de la xarxa interna (`192.168.200.0/24`), mentre que qualsevol accés extern és bloquejat mitjançant:
+
+-A INPUT -p tcp --dport 22 -j DROP  
+-A INPUT -p tcp --dport 5601 -j DROP  
+
+A més, es permet:
+
+- trànsit local (loopback)  
+- connexions establertes  
+
+### Objectiu
+
+- evitar accessos des de fora de la xarxa  
+- reduir la superfície d’atac  
+- protegir serveis d’administració i monitorització  
+
+Aquesta configuració garanteix que els serveis només siguin accessibles des de la LAN i no des d’Internet.
+
+---
 
 # Antivirus amb ClamAV
 
