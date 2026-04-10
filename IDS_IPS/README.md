@@ -746,3 +746,16 @@ ClamAV complementa el sistema IDS basat en Suricata:
 - ClamAV → detecció de malware a nivell de sistema  
 
 Aquesta combinació permet implementar una estratègia de seguretat més completa dins del laboratori, combinant **monitorització de xarxa i protecció de fitxers**.
+
+---
+
+# Conclusions
+
+Aquest projecte ha estat una experiència molt útil per introduir-me de manera pràctica en el món de la ciberseguretat. Al llarg del desenvolupament, he pogut entendre com funcionen realment sistemes de detecció d’intrusions com Suricata, així com la importància de la monitorització i l’anàlisi de logs amb eines com Elastic Stack.
+
+Tot i que al principi la configuració de totes les eines i la seva integració ha estat complexa, especialment en aspectes com la xarxa, les regles de detecció o la resposta automàtica, aquestes dificultats m’han ajudat a aprofundir molt més en el funcionament intern dels sistemes. També he pogut veure problemes reals com falsos positius, configuracions insegures o exposició de serveis, i com solucionar-los.
+
+Un dels punts més interessants ha estat implementar un sistema de resposta activa amb iptables, que permet actuar automàticament davant d’un atac, apropant el projecte a un entorn real de seguretat. A més, la detecció de comportament sospitós dins la LAN m’ha ajudat a entendre que les amenaces no només venen de fora, sinó també de dins de la xarxa.
+
+En conclusió, aquest projecte no només m’ha permès assolir els objectius plantejats, sinó que també m’ha servit com una primera aproximació molt completa al món de la ciberseguretat, aportant-me coneixements pràctics que considero molt útils de cara al futur professional.
+
