@@ -209,3 +209,15 @@ Després de l'execució del playbook:
 Això demostra com Ansible pot automatitzar la configuració d’una infraestructura completa.
 
 ---
+
+# Conclusions
+
+Aquest projecte m’ha permès introduir-me de manera pràctica en el món de l’automatització de sistemes utilitzant Ansible. Més enllà de la teoria, he pogut veure com realment es poden gestionar diversos servidors de forma centralitzada, simulant una infraestructura real mitjançant contenidors Docker.
+
+Al principi, entendre com funcionaven els playbooks, l’inventari o la connexió entre nodes no ha estat del tot senzill, però a mesura que avançava he anat guanyant confiança i entenent millor el funcionament de l’automatització. Especialment, m’ha resultat interessant veure com una mateixa configuració es pot aplicar a múltiples màquines de manera ràpida i consistent.
+
+Durant el projecte he pogut automatitzar tasques que habitualment es farien manualment, com la instal·lació de paquets, la configuració de serveis web o la creació d’usuaris. Això m’ha fet adonar de la importància de l’automatització en entorns reals, ja que redueix errors humans i estalvia molt temps en la gestió de sistemes.
+
+També considero molt interessant la integració amb el projecte d’IDS, ja que m’ha permès entendre com es poden combinar diferents tecnologies per construir un entorn més complet, no només centrat en la configuració sinó també en la seguretat.
+
+En general, aquest projecte m’ha ajudat a entendre millor com funcionen les infraestructures modernes i m’ha donat una base sòlida per continuar aprenent sobre automatització i DevOps en el futur.
