@@ -1,5 +1,14 @@
 # Projecte IDS/IPS i Automatització amb Ansible
 
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Ansible](https://img.shields.io/badge/Ansible-EE0000?style=for-the-badge&logo=ansible&logoColor=white)
+![Suricata](https://img.shields.io/badge/Suricata-IDS%2FIPS-orange?style=for-the-badge)
+![Nmap](https://img.shields.io/badge/Nmap-Network%20Scanning-004170?style=for-the-badge)
+![iptables](https://img.shields.io/badge/iptables-Firewall%20%26%20NAT-333333?style=for-the-badge)
+![Elastic Stack](https://img.shields.io/badge/Elastic_Stack-005571?style=for-the-badge&logo=elastic&logoColor=white)
+![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)
+![Kali Linux](https://img.shields.io/badge/Kali_Linux-557C94?style=for-the-badge&logo=kalilinux&logoColor=white)
+
 Aquest repositori recull un projecte integrat d'administració de sistemes i ciberseguretat format per dues parts relacionades entre si:
 
 1. **Automatització d'infraestructura amb Ansible i Docker**
