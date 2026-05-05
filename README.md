@@ -1,4 +1,24 @@
-# Projecte IDS/IPS i Automatització amb Ansible
+<div align="center">
+
+<br/>
+
+```
+██████╗ ██████╗  ██████╗      ██╗███████╗ ██████╗████████╗███████╗
+██╔══██╗██╔══██╗██╔═══██╗     ██║██╔════╝██╔════╝╚══██╔══╝██╔════╝
+██████╔╝██████╔╝██║   ██║     ██║█████╗  ██║        ██║   █████╗  
+██╔═══╝ ██╔══██╗██║   ██║██   ██║██╔══╝  ██║        ██║   ██╔══╝  
+██║     ██║  ██║╚██████╔╝╚█████╔╝███████╗╚██████╗   ██║   ███████╗
+╚═╝     ╚═╝  ╚═╝ ╚═════╝  ╚════╝ ╚══════╝ ╚═════╝   ╚═╝   ╚══════╝
+
+        I D S / I P S   i   A u t o m a t i t z a c i ó   a m b   A n s i b l e
+              A n s i b l e   →   I n f r a e s t r u c t u r a   →   S u r i c a t a
+```
+
+### Projecte IDS/IPS i Automatització amb Ansible
+
+*Infraestructura automatitzada · Monitorització de seguretat · Resposta activa*
+
+<br/>
 
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![Ansible](https://img.shields.io/badge/Ansible-EE0000?style=for-the-badge&logo=ansible&logoColor=white)
@@ -8,6 +28,10 @@
 ![Elastic Stack](https://img.shields.io/badge/Elastic_Stack-005571?style=for-the-badge&logo=elastic&logoColor=white)
 ![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)
 ![Kali Linux](https://img.shields.io/badge/Kali_Linux-557C94?style=for-the-badge&logo=kalilinux&logoColor=white)
+
+<br/>
+
+</div>
 
 Aquest repositori recull un projecte integrat d'administració de sistemes i ciberseguretat format per dues parts relacionades entre si:
 
